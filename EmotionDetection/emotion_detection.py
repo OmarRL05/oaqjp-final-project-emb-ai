@@ -10,9 +10,6 @@ def emotion_detector(text_to_analyse):
         response = requests.post(url, json=myobj, headers=header )
     except Exception as e:
         return {'message':'invalid input'}
-
-    if response.status_code == 400:
-        return {'message':'bad request'}
     
     formatted_response = json.loads(response.text)
     emotions_stats = formatted_response['emotionPredictions'][0]['emotion']
@@ -21,5 +18,10 @@ def emotion_detector(text_to_analyse):
     dominant_emotion = max(emotions_stats, key= emotions_stats.get)
     
     emotions_stats['dominant_emotion'] = dominant_emotion
+
+    if response.status_code == 400:
+        for key in emotions_stats:
+            emotions_stats[key] = None
+        return emotions_stats
 
     return emotions_stats
