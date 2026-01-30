@@ -1,27 +1,40 @@
-import requests
-import json
+"""
+    This module initiates the Flask application for the Emotion Detection system.
+"""
+from flask import Flask, request, render_template
+from EmotionDetection.emotion_detection import emotion_detector
 
-def emotion_detector(text_to_analyse):
-    url = 'https://sn-watson-emotion.labs.skills.network/v1/watson.runtime.nlp.v1/NlpService/EmotionPredict'
-    header = {"grpc-metadata-mm-model-id": "emotion_aggregated-workflow_lang_en_stock"}
-    myobj = { "raw_document": { "text": text_to_analyse } }
+app = Flask("Emotion Detector")
 
-    emotions_dict = { 'anger': None, 'disgust': None, 'fear': None, 'joy': None,'sadness': None, 'dominant_emotion': None}
+@app.route("/")
+def render_index():
+    """
+        Renders the main index page (index.html) for the application.
+    """
+    return render_template("index.html")
 
-    try:
-        response = requests.post(url, json=myobj, headers=header )
-    except Exception as e:
-        return emotions_dict
+@app.route("/emotionDetector")
+def get_text():
+    """
+        Analyzes the text from the request using the emotion_detector function
+        and returns a formatted string with the emotion scores and the dominant emotion.
+    """
+    text_to_analyze = request.args.get('textToAnalyze')
+    response = emotion_detector(text_to_analyze)
 
-    if response.status_code == 400:
-        return emotions_dict
+    if response['dominant_emotion'] is None:
+        return 'Invalid text! Please try again!'
 
-    formatted_response = json.loads(response.text)
-    emotions_stats = formatted_response['emotionPredictions'][0]['emotion']
+    return (
+        f"For the given statement, the system response is "
+        f"'anger': {response['anger']}, "
+        f"'disgust': {response['disgust']}, "
+        f"'fear': {response['fear']}, "
+        f"'joy': {response['joy']} "
+        f"and 'sadness': {response['sadness']}. "
+        f"The dominant emotion is {response['dominant_emotion']}."
+    )
 
-    # Finding the dominant emotion
-    dominant_emotion = max(emotions_stats, key= emotions_stats.get)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
     
-    emotions_stats['dominant_emotion'] = dominant_emotion
-
-    return emotions_stats
